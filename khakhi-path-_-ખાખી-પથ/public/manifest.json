@@ -1,0 +1,22 @@
+{
+  "name": "Khakhi Path | ખાખી પથ",
+  "short_name": "Khakhi Path",
+  "description": "Premium preparation hub for Gujarat government exams.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0ea5e9",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3233/3233508.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3233/3233508.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

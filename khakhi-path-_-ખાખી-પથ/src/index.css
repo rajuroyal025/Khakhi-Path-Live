@@ -1,0 +1,166 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Space+Grotesk:wght@300;500;700&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+Gujarati:wght@400;700;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Noto Sans Gujarati", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Noto Sans Gujarati", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+  --color-brand-950: #172554;
+
+  --color-khaki-50: #fdf8ef;
+  --color-khaki-100: #f9ecd2;
+  --color-khaki-200: #f2d8a5;
+  --color-khaki-300: #e9bc6d;
+  --color-khaki-400: #e19e41;
+  --color-khaki-500: #c67e2b;
+  --color-khaki-600: #a96022;
+  --color-khaki-700: #8c4a1e;
+  --color-khaki-800: #743d1d;
+  --color-khaki-900: #62351c;
+}
+
+@layer base {
+  body {
+    @apply bg-[#fafafa] dark:bg-[#020617] text-slate-900 antialiased selection:bg-brand-100 selection:text-brand-900;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(195, 176, 145, 0.05) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+}
+
+.tech-grid {
+  position: relative;
+  overflow: hidden;
+}
+
+.tech-grid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, #e2e8f0 1px, transparent 0);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black 50%, transparent);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.glass-nav {
+  @apply sticky top-0 z-[100] bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl border-b border-white/20 dark:border-white/5 transition-all duration-300;
+}
+
+.tech-card {
+  @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm hover:shadow-xl hover:border-brand-200 dark:hover:border-brand-800 transition-all duration-300;
+}
+
+.mono-label {
+  @apply font-mono text-[10px] font-bold uppercase tracking-widest text-slate-400;
+}
+
+.glass {
+  @apply bg-white/80 backdrop-blur-md border border-white/20;
+}
+
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Master Reading Mode Styles */
+.markdown-body {
+  @apply text-slate-700 dark:text-slate-300 leading-[1.8] space-y-6 antialiased;
+}
+
+.markdown-body h1 {
+  @apply text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight mt-10 mb-8 border-b-4 border-brand-100 dark:border-brand-900/30 pb-4 leading-tight;
+}
+
+.markdown-body h2 {
+  @apply text-2xl sm:text-3xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight mt-12 mb-6 border-l-8 border-brand-500 pl-6 bg-slate-50 dark:bg-slate-800/50 py-3 rounded-r-2xl;
+}
+
+.markdown-body h3 {
+  @apply text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-200 mt-8 mb-4 flex items-center gap-2;
+}
+
+.markdown-body p {
+  @apply mb-6 text-[17px] sm:text-[18px] leading-[1.9] text-slate-700 dark:text-slate-300;
+}
+
+.markdown-body ul {
+  @apply space-y-4 my-8 list-none pl-0;
+}
+
+.markdown-body li {
+  @apply relative pl-10 text-[17px] sm:text-[18px] before:content-[''] before:absolute before:left-0 before:top-[0.6em] before:w-3 before:h-3 before:bg-brand-500 before:rounded-full before:shadow-[0_0_12px_rgba(59,130,246,0.6)];
+}
+
+.markdown-body strong {
+  @apply font-black text-slate-900 dark:text-white bg-yellow-100/50 dark:bg-yellow-900/20 px-1.5 rounded;
+}
+
+.markdown-body blockquote {
+  @apply bg-brand-50/80 dark:bg-brand-900/10 border-l-8 border-brand-600 p-8 my-10 rounded-r-[2rem] italic text-brand-900 dark:text-brand-200 font-medium shadow-sm relative overflow-hidden text-lg;
+}
+
+.markdown-body blockquote p {
+  @apply mb-0 leading-relaxed;
+}
+
+.markdown-body hr {
+  @apply my-16 border-slate-100 dark:border-slate-800 border-t-2 opacity-50;
+}
+
+.markdown-body code {
+  @apply bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-brand-600 dark:text-brand-400 font-mono text-sm border border-slate-200 dark:border-slate-700;
+}
+
+.markdown-body pre {
+  @apply bg-slate-900 text-slate-100 p-6 rounded-2xl overflow-x-auto my-8 border border-slate-800 shadow-xl;
+}
+
+/* Responsive Webpage Layout Helpers */
+.container-responsive {
+  width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 768px) {
+  .container-responsive {
+    max-width: 720px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-responsive {
+    max-width: 960px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container-responsive {
+    max-width: 1200px;
+  }
+}

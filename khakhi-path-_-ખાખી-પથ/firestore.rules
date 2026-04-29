@@ -1,0 +1,168 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3: Primitive Definition
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isAdmin() { 
+      // Hardcoded admin email with verification check
+      return isSignedIn() && 
+             request.auth.token.email == "rajuroyal025@gmail.com" && 
+             request.auth.token.email_verified == true; 
+    }
+    function isValidId(id) { return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // Validation Helpers
+    function isValidQuestion(q) {
+      return q.keys().hasAll(['id', 'text', 'options', 'correctAnswer', 'subject']) &&
+             q.keys().size() >= 5 && q.keys().size() <= 10 &&
+             q.id is string && q.text is string && q.text.size() <= 2000 &&
+             q.options is list && q.options.size() >= 2 && q.options.size() <= 10 &&
+             q.correctAnswer is int &&
+             q.subject is string && q.subject.size() <= 100;
+    }
+
+    function isValidMistake(data) {
+      return data.keys().hasAll(['question', 'userAnswer', 'missedAt']) &&
+             data.keys().size() == 3 &&
+             data.question is map &&
+             data.userAnswer is int &&
+             data.missedAt is timestamp;
+    }
+
+    function isValidSavedQuestion(data) {
+      return data.keys().hasAll(['question', 'savedAt']) &&
+             data.keys().size() == 2 &&
+             data.question is map &&
+             data.savedAt is timestamp;
+    }
+
+    function isValidAttempt(data) {
+      return data.keys().hasAll(['userId', 'testId', 'score', 'totalMarks']) &&
+             data.userId == request.auth.uid &&
+             data.testId is string &&
+             data.score is int &&
+             data.totalMarks is int;
+    }
+
+    function isValidLeaderboardEntry(data) {
+      return data.keys().hasAll(['displayName', 'totalScore', 'testsCompleted', 'accuracy']) &&
+             data.keys().size() >= 4 && data.keys().size() <= 10 &&
+             data.displayName is string && data.displayName.size() <= 50 &&
+             data.totalScore is int &&
+             data.testsCompleted is int &&
+             data.accuracy is number;
+    }
+
+    // 1. Questions
+    match /questions/{questionId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidId(questionId) && isValidQuestion(incoming());
+    }
+
+    // 2. Daily Tests
+    match /dailyTests/{testId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidId(testId);
+    }
+
+    // 3. User Attempts
+    match /attempts/{attemptId} {
+      allow get: if isSignedIn() && isValidId(attemptId) && (resource == null || resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(attemptId) && isValidAttempt(incoming());
+      allow update, delete: if false;
+    }
+
+    // 4. Leaderboard
+    match /leaderboard/{userId} {
+      allow read: if true;
+      allow write: if isOwner(userId) && isValidId(userId) && isValidLeaderboardEntry(incoming());
+    }
+
+    // 5. Users and Subcollections
+    match /users/{userId} {
+      allow read: if isOwner(userId) && isValidId(userId);
+      allow write: if isOwner(userId) && isValidId(userId);
+
+      match /mistakes/{mistakeId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(mistakeId) && isValidMistake(incoming());
+        allow delete: if isOwner(userId) && isValidId(mistakeId);
+      }
+
+      match /saved/{saveId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(saveId) && isValidSavedQuestion(incoming());
+        allow delete: if isOwner(userId) && isValidId(saveId);
+      }
+    }
+
+    // 6. Usernames
+    match /usernames/{username} {
+      allow get: if true;
+      allow create: if isSignedIn() && username is string && username.size() >= 3 && username.size() <= 32;
+    }
+
+    // 7. Current Affairs
+    match /currentAffairs/{date} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    function isValidDuel(data) {
+      return data.keys().hasAll(['id', 'players', 'status', 'createdAt', 'updatedAt']) &&
+             data.keys().size() >= 5 && data.keys().size() <= 15 &&
+             data.id is string &&
+             data.players is map &&
+             data.status is string &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    match /duels/{duelId} {
+      // Allow players in the duel to read it
+      allow read: if isSignedIn() && isValidId(duelId);
+      // Allow any signed in user to create a duel (matchmaking)
+      allow create: if isSignedIn() && isValidId(duelId) && isValidDuel(incoming());
+      // Only players in the duel can update it
+      allow update: if isSignedIn() && isValidId(duelId) && isValidDuel(incoming()) && 
+                    (existing().players.keys().hasAny([request.auth.uid]) || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /rooms/{roomId} {
+      allow read: if isSignedIn() && isValidId(roomId);
+      allow create: if isSignedIn() && isValidId(roomId) && isValidDuel(incoming());
+      allow update: if isSignedIn() && isValidId(roomId) && isValidDuel(incoming()) &&
+                    (existing().players.keys().hasAny([request.auth.uid]) || isAdmin());
+      allow delete: if isAdmin() || (isSignedIn() && existing().hostId == request.auth.uid);
+    }
+
+    match /matchmaking/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      // Allow users to find opponents by topic
+      allow list: if isSignedIn();
+      allow create, update: if isOwner(userId) && isValidId(userId);
+      allow delete: if isOwner(userId) && isValidId(userId);
+    }
+
+    match /notifications/{notifId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // 9. Connection Test
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

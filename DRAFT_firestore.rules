@@ -1,0 +1,117 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3: Primitive Definition
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isAdmin() { 
+      return isSignedIn() && 
+             request.auth.token.email == "rajuroyal025@gmail.com" && 
+             request.auth.token.email_verified == true; 
+    }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // Validation Helpers
+    function isValidQuestion(q) {
+      return q.keys().hasAll(['id', 'text', 'options', 'correctAnswer', 'subject']) &&
+             q.id is string && q.text is string && q.text.size() <= 2000 &&
+             q.options is list && q.options.size() >= 2 &&
+             q.correctAnswer is int &&
+             q.subject is string;
+    }
+
+    function isValidMistake(data) {
+      return data.keys().hasAll(['question', 'userAnswer', 'missedAt']) &&
+             data.question is map &&
+             data.userAnswer is int &&
+             data.missedAt is timestamp;
+    }
+
+    function isValidSavedQuestion(data) {
+      return data.keys().hasAll(['question', 'savedAt']) &&
+             data.question is map &&
+             data.savedAt is timestamp;
+    }
+
+    // 1. Questions
+    match /questions/{questionId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 2. Daily Tests
+    match /dailyTests/{testId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // 3. User Attempts
+    match /attempts/{attemptId} {
+      allow read: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // 4. Leaderboard
+    match /leaderboard/{userId} {
+      allow read: if true;
+      allow write: if isOwner(userId);
+    }
+
+    // 5. Users and Subcollections
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(userId);
+
+      match /mistakes/{mistakeId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidMistake(incoming());
+        allow delete: if isOwner(userId);
+      }
+
+      match /saved/{saveId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidSavedQuestion(incoming());
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    // 6. Usernames
+    match /usernames/{username} {
+      allow get: if true;
+      allow create: if isSignedIn();
+    }
+
+    // 7. Current Affairs
+    match /currentAffairs/{date} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 8. Duel Features
+    match /rooms/{roomId} {
+      allow read, write, delete: if isSignedIn();
+    }
+
+    match /matchmaking/{userId} {
+      allow read, write, delete: if isOwner(userId);
+    }
+
+    match /duels/{duelId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // 9. Connection Test
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

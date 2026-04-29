@@ -1,0 +1,192 @@
+{
+  "entities": {
+    "Question": {
+      "title": "Question",
+      "description": "A single multiple choice question",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "text": { "type": "string" },
+        "options": { "type": "array", "items": { "type": "string" } },
+        "correctAnswer": { "type": "integer" },
+        "subject": { "type": "string" },
+        "topic": { "type": "string" },
+        "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"] }
+      },
+      "required": ["id", "text", "options", "correctAnswer", "subject"]
+    },
+    "DailyTest": {
+      "title": "Daily Test",
+      "description": "A test generated for a specific day",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "questionIds": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "date", "questionIds"]
+    },
+    "UserAttempt": {
+      "title": "User Attempt",
+      "description": "A user's attempt at a test",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "testId": { "type": "string" },
+        "score": { "type": "integer" },
+        "totalMarks": { "type": "integer" },
+        "timeTaken": { "type": "integer" },
+        "isFirstAttempt": { "type": "boolean" },
+        "isSuspicious": { "type": "boolean" },
+        "answers": { "type": "array", "items": { "type": "integer" } },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "testId", "score", "totalMarks", "answers"]
+    },
+    "LeaderboardEntry": {
+      "title": "Leaderboard Entry",
+      "description": "A user's rank and stats",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "totalScore": { "type": "integer" },
+        "testsCompleted": { "type": "integer" },
+        "accuracy": { "type": "number" },
+        "bestTime": { "type": "integer" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["displayName", "totalScore", "testsCompleted", "accuracy"]
+    },
+    "CurrentAffairs": {
+      "title": "Current Affairs",
+      "description": "Daily current affairs briefing",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "total_news_count": { "type": "integer" },
+        "articles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "integer" },
+              "category": { "type": "string" },
+              "headline_gu": { "type": "string" },
+              "details_gu": { "type": "string" },
+              "key_takeaway_for_exam": { "type": "string" },
+              "tags": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      },
+      "required": ["date", "total_news_count", "articles"]
+    },
+    "Mistake": {
+      "title": "Mistake",
+      "description": "A question missed by a user",
+      "type": "object",
+      "properties": {
+        "question": { "$ref": "Question" },
+        "userAnswer": { "type": "integer" },
+        "missedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["question", "userAnswer", "missedAt"]
+    },
+    "SavedQuestion": {
+      "title": "Saved Question",
+      "description": "A question saved by a user",
+      "type": "object",
+      "properties": {
+        "question": { "$ref": "Question" },
+        "savedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["question", "savedAt"]
+    },
+    "Duel": {
+      "title": "Duel",
+      "description": "A real-time battle between two users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "players": { "type": "object" },
+        "status": { "type": "string", "enum": ["waiting", "playing", "finished"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "players", "status", "createdAt", "updatedAt"]
+    },
+    "MatchmakingQueue": {
+      "title": "Matchmaking Queue",
+      "description": "Information about a user waiting for a match",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "topic": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["uid", "displayName", "topic"]
+    },
+    "GlobalNotification": {
+      "title": "Global Notification",
+      "description": "Announcement sent by admin",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["info", "success", "warning", "error"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["message", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/questions/{questionId}": {
+      "schema": "Question",
+      "description": "Collection of all available questions"
+    },
+    "/dailyTests/{testId}": {
+      "schema": "DailyTest",
+      "description": "Collection of daily tests"
+    },
+    "/attempts/{attemptId}": {
+      "schema": "UserAttempt",
+      "description": "Collection of user test attempts"
+    },
+    "/leaderboard/{userId}": {
+      "schema": "LeaderboardEntry",
+      "description": "Collection of leaderboard entries"
+    },
+    "/currentAffairs/{date}": {
+      "schema": "CurrentAffairs",
+      "description": "Collection of daily current affairs briefings"
+    },
+    "/users/{userId}/mistakes/{mistakeId}": {
+      "schema": "Mistake",
+      "description": "Subcollection of questions missed by a specific user"
+    },
+    "/users/{userId}/saved/{saveId}": {
+      "schema": "SavedQuestion",
+      "description": "Subcollection of questions saved by a specific user"
+    },
+    "/duels/{duelId}": {
+      "schema": "Duel",
+      "description": "Collection of active and finished duels"
+    },
+    "/matchmaking/{userId}": {
+      "schema": "MatchmakingQueue",
+      "description": "Collection of users in the matchmaking queue"
+    },
+    "/rooms/{roomId}": {
+      "schema": "Duel",
+      "description": "Collection of private rooms for duels"
+    },
+    "/notifications/{notifId}": {
+      "schema": "GlobalNotification",
+      "description": "Global announcements from admin"
+    }
+  }
+}

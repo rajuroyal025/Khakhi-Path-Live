@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Brain, Calculator, FlaskConical, History, Map, Newspaper, Trophy, Timer, CheckCircle2, ChevronRight, ArrowLeft, LogOut, Settings, Swords, Zap, MessageSquare, Loader2, User, Mail, Lock, Phone, ShieldCheck, Eye, EyeOff, Calendar, Flame, Lightbulb, Target, RotateCw, Bookmark, X, Megaphone, Send, Bell, Search, Bot } from 'lucide-react';
+import { BookOpen, Brain, Calculator, FlaskConical, History, Map, Newspaper, Trophy, Timer, CheckCircle2, ChevronRight, ArrowLeft, LogOut, Settings, Swords, Zap, MessageSquare, Loader2, User, Mail, Lock, Phone, ShieldCheck, Eye, EyeOff, Calendar, Flame, Lightbulb, Target, RotateCw, Bookmark, X, Megaphone, Send, Bell, Search, Bot, Maximize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Question, Test, UserAttempt, Lesson, CurrentAffairsDaily, CurrentAffairsArticle } from '../types';
 import { subjects } from '../mockData';
@@ -1210,10 +1210,10 @@ export const LessonView: React.FC<{
               <RotateCw size={64} className="text-white" />
             </motion.div>
             <h3 className="text-2xl font-black text-white mb-4">
-              📱 સારા અનુભવ માટે કૃપા કરીને ફોનને આડો (Landscape) રાખો.
+              📱 ફોન રોટેટ કરો (Rotate Phone)
             </h3>
             <p className="text-slate-300 font-bold text-lg mb-8">
-              Please rotate your phone for the best reading experience.
+              for btter view ppt you can full view then after rotate your phone
             </p>
             <button 
               onClick={() => setIsPortrait(false)}
@@ -1314,9 +1314,32 @@ export const LessonView: React.FC<{
                   <h3 className="font-black text-xl text-slate-800 tracking-tight">સ્ટડી મટીરીયલ (Study Slides)</h3>
                 </div>
                 <DocViewer url={lesson.pptUrl} title={lesson.title} />
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-center">
-                  Interactive Document Viewer • Slide Control
-                </p>
+                <div className="relative py-8 flex flex-col items-center">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-1 bg-gradient-to-r from-transparent via-brand-500/20 to-transparent rounded-full" />
+                  
+                  <div className="flex flex-col items-center gap-2 group cursor-pointer">
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-full shadow-sm group-hover:shadow-md transition-all">
+                       <Maximize2 size={12} className="text-brand-500" />
+                       <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Full Experience</span>
+                    </div>
+                    
+                    <p className="text-slate-400 dark:text-slate-500 text-[11px] font-bold text-center max-w-xs leading-relaxed">
+                      For better view PPT you can <span className="text-brand-500">Full View</span> then after rotate your phone
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-6 mt-6">
+                    <div className="flex flex-col items-center gap-1 text-slate-300 dark:text-slate-700">
+                      <Zap size={14} className="fill-current" />
+                      <span className="text-[8px] font-black tracking-widest uppercase">Fast Load</span>
+                    </div>
+                    <div className="w-12 h-[1px] bg-slate-100 dark:bg-slate-800" />
+                    <div className="flex flex-col items-center gap-1 text-slate-300 dark:text-slate-700">
+                      <ShieldCheck size={14} className="fill-current" />
+                      <span className="text-[8px] font-black tracking-widest uppercase">Secure Docs</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 

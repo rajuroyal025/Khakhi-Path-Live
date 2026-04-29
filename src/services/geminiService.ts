@@ -1,31 +1,26 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { Question, CurrentAffairsDaily, CurrentAffairsArticle, Test } from "../types";
 import { getDailyFocus } from "../data/syllabus";
 
-let genAI: GoogleGenAI | null = null;
+// Initialize Gemini directly in frontend as per skill instructions
 const getAI = () => {
-  if (!genAI) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY is missing. AI features will be disabled.');
-    }
-    genAI = new GoogleGenAI({ apiKey });
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.error("GEMINI_API_KEY is missing from environment. AI features will not work.");
+    throw new Error("API_KEY_MISSING");
   }
-  return genAI;
+  return new GoogleGenAI({ apiKey });
 };
 
 function handleGeminiError(error: any, context: string) {
   console.error(`Gemini Error [${context}]:`, error);
-  const errorMsg = error.message || String(error);
+  const errorMsg = error.error || error.message || String(error);
   
-  // Check for 429 or RESOURCE_EXHAUSTED in various error formats
   const isQuotaExceeded = 
     errorMsg.includes('429') || 
     errorMsg.includes('RESOURCE_EXHAUSTED') || 
     error.status === 'RESOURCE_EXHAUSTED' ||
-    error.error?.status === 'RESOURCE_EXHAUSTED' ||
-    error.error?.code === 429 ||
-    error.error?.code === '429';
+    error.error?.status === 'RESOURCE_EXHAUSTED';
 
   if (isQuotaExceeded) {
     throw new Error('GUJARATI_QUOTA_EXCEEDED');
@@ -36,40 +31,33 @@ function handleGeminiError(error: any, context: string) {
 
 export async function generateCurrentAffairs(date: string): Promise<CurrentAffairsDaily> {
   const prompt = `Role: You are an elite Current Affairs Content Architect and Curriculum Expert for Gujarat State Government Exams, specifically tailored for the Gujarat Police Constable and PSI syllabus.
-
-Task: Generate a highly accurate, exam-focused daily current affairs briefing for today's date: ${date}.
-
-Rules & Constraints:
-1. Content Ratio: Exactly 60% of the news must be Gujarat-specific (state policies, appointments, local events, culture, geography). Exactly 40% must be National/International news highly relevant to India (defense, science, sports, national awards).
-2. Exam Relevance: Filter out political gossip, celebrity news, or irrelevant crime. Only include news that has a high probability of being asked in an MCQ format for Constable/PSI exams.
-3. Language: The output must be entirely in flawless, grammatically correct Gujarati.
-4. Brevity: The details_gu section must be concise, bulleted, and take no more than 3-4 sentences to read.
+...
 5. Strict Output: You must output ONLY a valid JSON object. Do not include markdown formatting like \`\`\`json or any conversational text before or after the JSON.`;
 
   try {
     const ai = getAI();
-    const response = await ai.models.generateContent({
+    const result = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
         temperature: 0.2,
         responseMimeType: "application/json",
         responseSchema: {
-          type: Type.OBJECT,
+          type: "OBJECT",
           properties: {
-            date: { type: Type.STRING },
-            total_news_count: { type: Type.INTEGER },
+            date: { type: "STRING" },
+            total_news_count: { type: "INTEGER" },
             articles: {
-              type: Type.ARRAY,
+              type: "ARRAY",
               items: {
-                type: Type.OBJECT,
+                type: "OBJECT",
                 properties: {
-                  id: { type: Type.INTEGER },
-                  category: { type: Type.STRING },
-                  headline_gu: { type: Type.STRING },
-                  details_gu: { type: Type.STRING },
-                  key_takeaway_for_exam: { type: Type.STRING },
-                  tags: { type: Type.ARRAY, items: { type: Type.STRING } }
+                  id: { type: "INTEGER" },
+                  category: { type: "STRING" },
+                  headline_gu: { type: "STRING" },
+                  details_gu: { type: "STRING" },
+                  key_takeaway_for_exam: { type: "STRING" },
+                  tags: { type: "ARRAY", items: { type: "STRING" } }
                 },
                 required: ["id", "category", "headline_gu", "details_gu", "key_takeaway_for_exam", "tags"]
               }
@@ -80,11 +68,10 @@ Rules & Constraints:
       }
     });
 
-    const text = response.text || '';
-    return JSON.parse(text) as CurrentAffairsDaily;
+    return JSON.parse(result.text || '{}') as CurrentAffairsDaily;
   } catch (error) {
     handleGeminiError(error, "generateCurrentAffairs");
-    throw error; // unreachable but satisfies TS
+    throw error;
   }
 }
 
@@ -110,39 +97,55 @@ CRITICAL RULE: You MUST generate EXACTLY 25 questions.
 Respond strictly in valid JSON format. Do not include any other text, markdown formatting, or explanations outside of the JSON array.`;
 
 export async function generateStudyContent(subject: string, lessonTitle: string): Promise<string> {
-  const prompt = `You are an expert Gujarati assistant and tutor for the Police Constable Exam. Act as a teacher. The student is studying subject '${subject}' and has clicked on lesson topic '${lessonTitle}'.
+  const prompt = `Role: You are a distinguished Senior Professor from a world-class university (like Harvard), specialized in pedagogy and ${subject}. You are mentoring a student for the competitive Gujarat Police Constable Exam. 
 
-Please generate a highly engaging, simple-to-understand study module in Gujarati.
+Your objective is to provide a comprehensive, intellectually stimulating, yet perfectly clear study module in Gujarati. 
 
-Your outputs must be highly structured, perfectly aligned, and easy to read on a webpage.
+Pedagogical Principles:
+1. Intellectual Rigor: Do not oversimplify. Explain the "Why" and the "How".
+2. Multi-Layered Learning: Break down complex legal or scientific phenomena into first principles.
+3. Engaging Narrative: Use elegant analogies to ground abstract concepts in reality.
 
-Formatting Rules:
-1. Use clear headings (using ## or ###).
-2. Always use bullet points (* or -) for lists or multiple data points to ensure vertical alignment.
-3. Keep paragraphs short and concise.
-4. All responses must be entirely in the Gujarati language.
-5. Do not output a single block of messy text; force line breaks where logical.
-6. Make this content fully responsive. Ensure all containers use relative widths so it adapts perfectly to mobile, tablet, and desktop screens.
+Formatting Instructions (CRITICAL for Readability):
+1. Use semantic headers (## and ###).
+2. Use bolding (**term**) for key technical terms in Gujarati.
+3. Use bullet points extensively for clarity.
+4. Ensure a generous use of whitespace between sections.
+5. All content must be in Gujarati and perfectly structured for mobile view.
 
-Structure it like this:
-1. Concept Story: Start with a simple real-life example of why this topic matters to a common citizen.
-2. Core Facts: Bullet points of the most important facts and articles that are frequently asked in exams.
-3. Tricky Areas: Point out 1 or 2 things students usually get confused about.
-4. Quick Test: 3 basic MCQs to test if they understood the text above.
+Structure:
+1. The Grand Concept: An introductory analogy that sets the stage.
+2. The Academic Core: Detailed breakdown of facts, articles (if Law), and historical milestones (if History). Use structured lists.
+3. Nuanced Distinctions: Clarify common misconceptions with academic precision.
+4. The Scholar's Review: A concise wrap-up.
+5. Quick Knowledge Check: 3 challenging MCQs with answers.
 
-Output exactly in Markdown format so I can render it properly on my learning portal.`;
+Subject: ${subject}
+Topic: ${lessonTitle}
+
+Render the output in clean Markdown.`;
 
   try {
     const ai = getAI();
-    const response = await ai.models.generateContent({
+    const result = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config: {
+        temperature: 0.3,
+        topP: 0.9,
+      }
     });
     
-    let text = response.text || '';
+    let text = result.text || '';
+    
+    if (!text) {
+      throw new Error("Empty response from AI");
+    }
     
     // Clean up markdown if present
-    if (text.startsWith('```html')) {
+    if (text.startsWith('```markdown')) {
+      text = text.replace('```markdown', '').replace('```', '');
+    } else if (text.startsWith('```html')) {
       text = text.replace('```html', '').replace('```', '');
     } else if (text.startsWith('```')) {
       text = text.replace('```', '').replace('```', '');
@@ -159,27 +162,27 @@ export async function generateDailyTest(): Promise<Question[]> {
   const focus = getDailyFocus(new Date());
   const randomSeed = Math.floor(Math.random() * 1000000);
   
-  const SHARDED_PROMPT = `Act as an expert examiner for the Gujarat Police LRD (Constable) exam. 
-Generate a 25-mark test in Gujarati.
+  const SHARDED_PROMPT = `Role: Senior Examiner for the Gujarat State Selection Board.
+Task: Construct a rigorous, syllabus-aligned 25-mark examination in Gujarati for the LRD (Constable) cadre.
 
-TODAY'S STRICT FOCUS (Topic Sharding):
-- 7 questions on: ${focus.constitution}
-- 6 questions on: ${focus.history}
-- 6 questions on: ${focus.geography}
-- 6 questions on: ${focus.science}
+Examination Focus (Topic Sharding):
+- Constitution of India (${focus.constitution}): 7 Questions
+- History of Gujarat (${focus.history}): 6 Questions
+- Geography of Gujarat (${focus.geography}): 6 Questions
+- General Science (${focus.science}): 6 Questions
 
-CRITICAL EXCLUSION LIST (Negative Prompting):
-Do NOT generate questions related to these recently covered topics: ${recentTopics.join(', ')}.
+Randomization Seed: ${randomSeed}
+Academic Constraint: Do NOT repeat these topics: ${recentTopics.join(', ')}.
 
-RANDOMIZATION STRATEGY:
-Use seed ${randomSeed}. Start by picking a specific historical or scientific scenario related to the focus topics and derive at least 3 questions from it.
-
-Each question must have 4 options and exactly 1 correct answer.
-Respond strictly in valid JSON format.`;
+Technical Requirements:
+1. Every question must have EXACTLY 4 plausible options.
+2. Only 1 option must be academically correct.
+3. Use professional administrative Gujarati.
+4. Output Format: Valid JSON array.`;
 
   try {
     const ai = getAI();
-    const response = await ai.models.generateContent({
+    const result = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [{ role: 'user', parts: [{ text: SHARDED_PROMPT }] }],
       config: {
@@ -188,21 +191,21 @@ Respond strictly in valid JSON format.`;
         topP: 0.95,
         responseMimeType: "application/json",
         responseSchema: {
-          type: Type.ARRAY,
+          type: "ARRAY",
           items: {
-            type: Type.OBJECT,
+            type: "OBJECT",
             properties: {
-              id: { type: Type.STRING },
-              text: { type: Type.STRING },
+              id: { type: "STRING" },
+              text: { type: "STRING" },
               options: { 
-                type: Type.ARRAY, 
-                items: { type: Type.STRING },
+                type: "ARRAY", 
+                items: { type: "STRING" },
                 description: "Exactly 4 options"
               },
-              correctAnswer: { type: Type.INTEGER, description: "Index of correct answer (0-3)" },
-              subject: { type: Type.STRING },
-              topic: { type: Type.STRING },
-              difficulty: { type: Type.STRING, description: "easy, medium, or hard" }
+              correctAnswer: { type: "INTEGER", description: "Index of correct answer (0-3)" },
+              subject: { type: "STRING" },
+              topic: { type: "STRING" },
+              difficulty: { type: "STRING", description: "easy, medium, or hard" }
             },
             required: ["id", "text", "options", "correctAnswer", "subject", "topic", "difficulty"]
           }
@@ -210,8 +213,7 @@ Respond strictly in valid JSON format.`;
       }
     });
     
-    const text = response.text || '';
-    const questions = JSON.parse(text) as Question[];
+    const questions = JSON.parse(result.text || '[]') as Question[];
     
     // Update exclusion list with new topics
     const newTopics = questions.map(q => q.topic);
@@ -226,24 +228,22 @@ Respond strictly in valid JSON format.`;
 
 export async function generateDuelQuestions(topic: string): Promise<Question[]> {
   const randomSeed = Math.floor(Math.random() * 1000000);
-  const prompt = `Generate 10 highly balanced multiple choice questions in Gujarati for a competitive duel match.
+  const prompt = `Role: Competitive Assessment Specialist.
+Task: Generate 10 intellectually challenging MCQs in Gujarati for a high-stakes competitive match.
+
 Topic: ${topic}
-Target Exam: Gujarat Police Constable (LRD)
+Exam Hierarchy: Gujarat Police Recruitment (LRD)
 
-RANDOMIZATION STRATEGY:
-Use seed ${randomSeed}. Inject a "Joker" question as the final question (10th) which is a complex, scenario-based question.
+Specific Instructions:
+1. Randomization: Use seed ${randomSeed}. The 10th question must be a "Cognitive Challenge" (scenario-based).
+2. Diversity: Avoid ${recentTopics.join(', ')}.
+3. Precision: Ensure each question reflects the official LRD syllabus standards.
 
-CRITICAL EXCLUSION LIST:
-Avoid these recently used sub-topics: ${recentTopics.join(', ')}.
-
-Each question must have 4 options and exactly 1 correct answer.
-The questions should range from easy to hard.
-
-Respond strictly in valid JSON format.`;
+Response Format: JSON array.`;
 
   try {
     const ai = getAI();
-    const response = await ai.models.generateContent({
+    const result = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
@@ -252,20 +252,20 @@ Respond strictly in valid JSON format.`;
         topP: 0.9,
         responseMimeType: "application/json",
         responseSchema: {
-          type: Type.ARRAY,
+          type: "ARRAY",
           items: {
-            type: Type.OBJECT,
+            type: "OBJECT",
             properties: {
-              id: { type: Type.STRING },
-              text: { type: Type.STRING },
+              id: { type: "STRING" },
+              text: { type: "STRING" },
               options: { 
-                type: Type.ARRAY, 
-                items: { type: Type.STRING }
+                type: "ARRAY", 
+                items: { type: "STRING" }
               },
-              correctAnswer: { type: Type.INTEGER },
-              subject: { type: Type.STRING },
-              topic: { type: Type.STRING },
-              difficulty: { type: Type.STRING }
+              correctAnswer: { type: "INTEGER" },
+              subject: { type: "STRING" },
+              topic: { type: "STRING" },
+              difficulty: { type: "STRING" }
             },
             required: ["id", "text", "options", "correctAnswer", "subject", "topic", "difficulty"]
           }
@@ -273,7 +273,7 @@ Respond strictly in valid JSON format.`;
       }
     });
     
-    const questions = JSON.parse(response.text || '[]') as Question[];
+    const questions = JSON.parse(result.text || '[]') as Question[];
     updateExclusionList(questions.map(q => q.topic));
     return questions;
   } catch (error) {
@@ -296,12 +296,12 @@ Focus on the core concepts they need to review. Be encouraging but firm like a s
 
   try {
     const ai = getAI();
-    const response = await ai.models.generateContent({
+    const result = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });
     
-    return response.text || "વધુ મહેનત કરો અને આવતા વખતે વિજય મેળવો!";
+    return result.text || "વધુ મહેનત કરો અને આવતા વખતે વિજય મેળવો!";
   } catch (error) {
     handleGeminiError(error, "generatePostMatchCoach");
     return "તમારા નબળા મુદ્દાઓ પર ધ્યાન આપો અને ફરી પ્રયાસ કરો.";
@@ -309,34 +309,35 @@ Focus on the core concepts they need to review. Be encouraging but firm like a s
 }
 
 export async function generateQuestionExplanation(question: string, options: string[], correctAnswer: string, userChoice: string): Promise<string> {
-  const prompt = `Role: You are an expert, encouraging professor mentoring students for the Gujarat Police Constable and PSI exams.
+  const prompt = `Role: You are a distinguished Professor specializing in academic mentoring for competitive exams. 
 
-Task: The student has just answered a multiple-choice question incorrectly. Your job is to explain why their answer was wrong and why the correct answer is right, in a way that is incredibly easy to understand.
+Context: A student has missed a question. Your task is to provide a "Harvard-style" debrief in Gujarati.
 
 Question: "${question}"
 Options: ${options.join(', ')}
 Correct Answer: "${correctAnswer}"
 Student's Incorrect Choice: "${userChoice}"
 
-Guidelines:
-1. Tone: Empathetic, supportive, and clear. Never make the student feel bad for guessing wrong.
-2. Structure: 
-   - State the correct answer clearly.
-   - Explain why it is correct using a simple fact or analogy.
-   - Briefly explain why the option they chose is a common misconception or incorrect.
-3. Language: Provide the explanation in clear, conversational Gujarati so that complex legal or historical concepts are easy to grasp for everyone. Keep sentences short.
-4. Formatting: Use Markdown for bolding key terms. Keep the total explanation under 4 sentences.
+Objectives:
+1. Validate the student's effort but clarify the logical gap.
+2. Explain the fundamental principle behind the correct answer using a clear, elegant analogy.
+3. Briefly explain why the chosen incorrect option was a reasonable but flawed deduction.
+4. Use professional, encouraging Gujarati.
 
+Format: Maximum 5 sentences. Use Markdown for emphasis.
 Output ONLY the explanation in Gujarati.`;
 
   try {
     const ai = getAI();
-    const response = await ai.models.generateContent({
+    const result = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config: {
+        temperature: 0.4
+      }
     });
     
-    return response.text || "સમજૂતી લોડ કરવામાં ભૂલ આવી. કૃપા કરીને ફરી પ્રયાસ કરો.";
+    return result.text || "સમજૂતી લોડ કરવામાં ભૂલ આવી. કૃપા કરીને ફરી પ્રયાસ કરો.";
   } catch (error) {
     handleGeminiError(error, "generateQuestionExplanation");
     return "સમજૂતી લોડ કરવામાં ભૂલ આવી. કૃપા કરીને ફરી પ્રયાસ કરો.";
@@ -344,35 +345,35 @@ Output ONLY the explanation in Gujarati.`;
 }
 
 export async function explainCurrentAffairs(article: CurrentAffairsArticle): Promise<string> {
-  const prompt = `Role: You are "Khakhi Path AI Tutor", an expert, friendly personal mentor specifically for Gujarat Police Constable and PSI aspirinats.
-  
-Task: Explain the following Current Affairs article in a deeply detailed yet simple way. Your goal is to make the student a "Master" of this topic for their exam.
+  const prompt = `Role: You are a distinguished Professor and subject matter expert for the Gujarat Police Exams. 
+
+Task: Provide a "Harvard-style" academic briefing on the following news article, ensuring the student achieves conceptual mastery for their exam.
 
 Article Headline: "${article.headline_gu}"
 Article Details: "${article.details_gu}"
 Exam Insights: "${article.key_takeaway_for_exam}"
 
-Guidelines for the Explanation:
-1. Tone: Personal, friendly ("Personal Tutor"), and exam-oriented. Use "તમે" (You) and encourage them.
-2. Language: Flawless Gujarati. Use simple analogies.
-3. Structure (Markdown):
-   - **શા માટે આ સમાચાર મહત્વના છે?** (Why this news matters): Explain the context.
-   - **ઊંડાણપૂર્વક સમજૂતી** (In-depth Explanation): Explain the background (Who, What, Where, When, Why).
-   - **પરીક્ષાલક્ષી વધારાની માહિતી** (Extra info for Exam): Add 2-3 related static facts (e.g., if it's about a district, mention its headquarters or a famous landmark).
-   - **યાદ રાખવાની ટ્રીક** (Memory Trick): Give a simple trick or mnemonics if possible.
-4. Formatting: Use Markdown (bold, headers, lists).
-5. Length: Detailed (around 8-10 sentences).
+Academic Structure:
+1. **Contextual Significance**: Why does this matter in the larger framework of governance, law, or society?
+2. **First Principles Analysis**: Break down the "Who, What, Where, When, Why" with intellectual depth.
+3. **Scholar's Marginalia**: 2-3 critical static facts or historical parallels relevant to the syllabus.
+4. **Pedagogical Anchor**: A memory technique or conceptual hook to ensure long-term retention.
 
-Output ONLY the Gujarati explanation in Markdown.`;
+Tone: Professional, intellectually stimulating, and supportive. Use Gujarati language exclusively.
+Length: Detailed and structured (approx. 8-10 sentences).
+Output strictly in Markdown.`;
 
   try {
     const ai = getAI();
-    const response = await ai.models.generateContent({
+    const result = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config: {
+        temperature: 0.3
+      }
     });
     
-    return response.text || "માફ કરશો, અત્યારે સમજૂતી ઉપલબ્ધ નથી.";
+    return result.text || "માફ કરશો, અત્યારે સમજૂતી ઉપલબ્ધ નથી.";
   } catch (error) {
     handleGeminiError(error, "explainCurrentAffairs");
     return "સમજૂતી લોડ કરવામાં ભૂલ આવી. કૃપા કરીને ફરી પ્રયાસ કરો.";
@@ -380,65 +381,58 @@ Output ONLY the Gujarati explanation in Markdown.`;
 }
 
 export async function generateGKReadingMaterial(topic: string): Promise<string> {
-  const prompt = `### ROLE: 
-Senior Educational Content Architect & UI Content Specialist.
+  const prompt = `Role: You are a Senior Educational Content Architect and distinguished Professor. 
 
-### TASK:
-Generate comprehensive, structured reading material/study notes for the "Khakhi Path" application. 
+Task: Construct a "Master Class" reading module for the "Khakhi Path" application in Gujarati.
 
-### CONTEXT:
-The material is for deep learning. It must be written in professional Gujarati, organized into logical sections with headings, and formatted for a clean, mobile-first reading experience (Apple/Google News style).
+Topic: ${topic}
 
-### TOPIC: 
-${topic}
-
-### OUTPUT FORMAT:
-Output in a structured JSON format so it can be parsed into a beautiful "Reading Mode" UI.
+Your output must be a highly structured JSON object that follows this schema, emphasizing academic depth and clarity.
 
 {
   "article_metadata": {
-    "title": "[Topic Title in Gujarati]",
-    "reading_time": "5 mins",
-    "category": "[e.g., History/Law]",
-    "importance_level": "High (Exam Favorite)"
+    "title": "[Master Title in Gujarati]",
+    "reading_time": "5-7 mins",
+    "category": "[History/Polity/Science]",
+    "importance_level": "High (Academic Priority)"
   },
   "content_body": [
     {
-      "section_title": "પરિચય (Introduction)",
-      "content": "[Comprehensive paragraph in Gujarati]",
-      "key_points": ["Point 1", "Point 2", "Point 3"]
+      "section_title": "પરિચય અને પૃષ્ઠભૂમિ (Introduction & Context)",
+      "content": "[Deeply analytical paragraph in Gujarati explaining the core principles]",
+      "key_points": ["[Academic Insight 1]", "[Academic Insight 2]"]
     },
     {
-      "section_title": "મુખ્ય તથ્યો (Key Facts)",
-      "content": "[Detailed historical or legal data]",
-      "image_placeholder_suggestion": "[Describe a relevant map or diagram for this section]"
+      "section_title": "બૌદ્ધિક પાયો (Fundamental Principles)",
+      "content": "[Detailed historical data or legal principles with professional depth]",
+      "image_placeholder_suggestion": "[Analytical diagram or map description]"
     },
     {
-      "section_title": "યાદ રાખવા જેવું (Must Remember)",
-      "content": "[A summary for quick revision before exams]",
-      "highlight_box": "Special fact about this topic in Gujarat."
+      "section_title": "પરીક્ષાલક્ષી વિશ્લેષણ (Exam-Centric Synthesis)",
+      "content": "[Strategic summary of what to keep in mind for the constable exam]",
+      "highlight_box": "A critical 'Need to Know' fact."
     }
   ],
-  "summary_footer": "[A 2-sentence wrap-up]"
+  "summary_footer": "[A professional, academic wrap-up]"
 }
 
-### STYLE GUIDELINES:
-1. Use "Bullet Points" for readability.
-2. Ensure the Gujarati is formal and accurate (Official Textbook Level).
-3. Structure the data so it can be displayed with clean typography and plenty of whitespace.`;
+Style Guidelines:
+1. Use formal, textbook-level Gujarati.
+2. Maintain a "Harvard Professor" persona—rigorous yet clear.
+3. Ensure every section has substantial pedagogical value.`;
 
   try {
     const ai = getAI();
-    const response = await ai.models.generateContent({
+    const result = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
-        temperature: 0.3,
+        temperature: 0.25,
         responseMimeType: "application/json",
       }
     });
 
-    const data = JSON.parse(response.text || '{}');
+    const data = JSON.parse(result.text || '{}');
     
     // Transform JSON to beautiful Markdown for the existing LessonView
     let markdown = `# ${data.article_metadata?.title || topic}\n\n`;

@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.khakhi_path_live.twa",
+        "sha256_cert_fingerprints": ["63:AA:EA:EF:1C:6C:7E:4C:57:18:20:B4:A8:9F:5A:B9:6C:BC:80:2D:54:A7:E1:0C:A4:E7:85:27:C3:02:3E:22"]
+      }
+}]

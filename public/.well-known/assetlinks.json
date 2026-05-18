@@ -1,8 +1,11 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "app.vercel.khakhi_path_live.twa",
-        "sha256_cert_fingerprints": ["63:AA:EA:EF:1C:6C:7E:4C:57:18:20:B4:A8:9F:5A:B9:6C:BC:80:2D:54:A7:E1:0C:A4:E7:85:27:C3:02:3E:22"]
-      }
-}]
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.khakhipath.policeprep",
+      "sha256_cert_fingerprints":
+        ["B0:B3:A9:A5:2D:D0:50:91:FE:E6:3C:BE:EA:DC:42:94:1B:2B:6E:6F:80:5B:EA:1F:53:CF:F9:4E:8D:55:0F:E3"]
+    }
+  }
+]
